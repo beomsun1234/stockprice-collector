@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestXxx(t *testing.T) {
-	t.Run("test", func(t *testing.T) {
+func Test_CollectStockPrices(t *testing.T) {
+	t.Run("CollectStockPrices Test", func(t *testing.T) {
 		//given
 		c := config.NewConfig()
 		c.KisConfig = config.KisConfig{
