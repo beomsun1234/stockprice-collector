@@ -38,4 +38,6 @@ func (s *StockPriceCollectionScheduler) collectStockPrices() {
 func (s *StockPriceCollectionScheduler) printLogs(stock_prices []*domain.Stock) {
 	byte_stock_prices, _ := json.Marshal(stock_prices)
 	log.Println(string(byte_stock_prices))
+	log.Println("size = ", len(stock_prices))
+	log.Println("---------------------------------------------------------------------")
 }

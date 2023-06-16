@@ -31,7 +31,9 @@ func Test_CollectStockPrices(t *testing.T) {
 		//when
 		stocks := stockPriceCollectorService.CollectStockPrices()
 		//then
-		assert.Equal(t, len(service.GetStockCodes()), len(stocks))
+		response_size := len(stocks)
+		request_stock_size := len(service.GetStockCodes())
+		assert.Equal(t, request_stock_size, response_size)
 		assert.Equal(t, "10000", stocks[0].Stock_Price)
 	})
 

@@ -1,9 +1,12 @@
 package service
 
 import (
+	"context"
 	"github/beomsun1234/stockprice-collector/domain"
 	"github/beomsun1234/stockprice-collector/external/kis"
+	"log"
 	"sync"
+	"time"
 )
 
 type StockPriceColletorServiceInterface interface {
@@ -60,28 +63,39 @@ func NewStockPriceColletorService(kisClientSetviceDi kis.KisClientSetviceInterfa
 주식가격 수집
 */
 func (s *StockPriceColletorService) CollectStockPrices() []*domain.Stock {
+	collected_stock_prices = []*domain.Stock{}
 	setStockCode()
 	wg = sync.WaitGroup{}
-	collected_stock_prices = []*domain.Stock{}
 	for _, stock_code := range stockCodes {
 		wg.Add(1)
 		go s.getStockPrice(stock_code)
 	}
 	//wait until stock price collection is done
 	wg.Wait()
-
 	return collected_stock_prices
 
 }
 
 func (s *StockPriceColletorService) getStockPrice(stock_code string) (*domain.Stock, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	stock_info, err := s.KisClientSetvice.GetStockPrice(stock_code)
-	if err != nil {
-		stock_info = &domain.Stock{}
+
+	if err := ctx.Err(); err != nil {
+		log.Println("timeout")
+		stock_info = &domain.Stock{
+			Stock_Code: stock_code,
+		}
 	}
-
+	if err != nil {
+		log.Println("error")
+		stock_info = &domain.Stock{
+			Stock_Code: stock_code,
+		}
+	}
 	collected_stock_prices = append(collected_stock_prices, stock_info)
-
-	defer wg.Done()
+	defer func() {
+		wg.Done()
+		cancel()
+	}()
 	return stock_info, nil
 }
