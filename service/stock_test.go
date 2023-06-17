@@ -20,7 +20,8 @@ func Test_CollectStockPrices(t *testing.T) {
 			Secret: "secret",
 		}
 		httpClient := &mocks.MockStockPriceHttpClient{}
-		kisClient := kis.NewKisClientSetvice(httpClient, &c.KisConfig)
+		mockRepo := mocks.NewMockKisAccessTokenRepository()
+		kisClient := kis.NewKisClientSetvice(httpClient, &c.KisConfig, mockRepo)
 		stockPriceCollectorService := service.NewStockPriceColletorService(kisClient)
 		res := &dto.KisStockPriceResponse{
 			KisStockPriceResDetails: dto.KisStockPriceResponseDetails{
