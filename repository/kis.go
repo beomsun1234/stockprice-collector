@@ -52,7 +52,7 @@ func (k *KisAccessTokenRepository) InsertKisAccessToken(token *domain.Token) err
 	defer cancel()
 	if err != nil {
 		log.Println("redis insert err", err)
-		return nil
+		return err
 	}
 
 	return nil
