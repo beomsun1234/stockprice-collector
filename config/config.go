@@ -8,12 +8,17 @@ import (
 )
 
 type Config struct {
-	KisConfig KisConfig `yaml:"kis"`
+	KisConfig   KisConfig   `yaml:"kis"`
+	RedisConfig RedisConfig `yaml:"redis"`
 }
 
 type KisConfig struct {
 	Key    string `yaml:"key"`
 	Secret string `yaml:"secret"`
+}
+type RedisConfig struct {
+	Addr     string `yaml:"addr"`
+	Password string `yaml:"password"`
 }
 
 func NewConfig() *Config {
@@ -23,6 +28,7 @@ func NewConfig() *Config {
 func (c *Config) SetConfig(file_name string) {
 	new_config := ConvertYamlToConfig(file_name)
 	c.KisConfig = new_config.KisConfig
+	c.RedisConfig = new_config.RedisConfig
 }
 
 func ConvertYamlToConfig(file_name string) *Config {
