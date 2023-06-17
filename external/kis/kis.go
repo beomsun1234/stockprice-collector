@@ -7,31 +7,38 @@ import (
 	"github/beomsun1234/stockprice-collector/domain"
 	"github/beomsun1234/stockprice-collector/external"
 	"github/beomsun1234/stockprice-collector/external/kis/dto"
+	"github/beomsun1234/stockprice-collector/repository"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 const (
 	kis_base = "https://openapi.koreainvestment.com:9443"
 )
 
-var requestURL *url.URL
+var (
+	requestURL *url.URL
+)
 
 type KisClientSetviceInterface interface {
 	GetStockPrice(stock_code string) (*domain.Stock, error)
-	GetAccesstoken() (*dto.KisAccessTokenResponse, error)
+	GetAccesstoken() (*domain.Token, error)
 }
 
 type KisClientSetvice struct {
-	HttpClient external.HttpClient
-	KisConfig  *config.KisConfig
+	HttpClient               external.HttpClient
+	KisConfig                *config.KisConfig
+	KisAccessTokenRepository repository.KisAccessTokenRepositoryInterface
 }
 
-func NewKisClientSetvice(http_client_di external.HttpClient, kis_config *config.KisConfig) KisClientSetviceInterface {
+func NewKisClientSetvice(http_client_di external.HttpClient, kis_config *config.KisConfig, kisAccessTokenRepository repository.KisAccessTokenRepositoryInterface) KisClientSetviceInterface {
 	return &KisClientSetvice{
-		HttpClient: http_client_di,
-		KisConfig:  kis_config,
+		HttpClient:               http_client_di,
+		KisConfig:                kis_config,
+		KisAccessTokenRepository: kisAccessTokenRepository,
 	}
 }
 
@@ -39,11 +46,54 @@ func NewKisClientSetvice(http_client_di external.HttpClient, kis_config *config.
 주식 현재가 요청
 */
 func (k *KisClientSetvice) GetStockPrice(stock_code string) (*domain.Stock, error) {
-	kis_stock_price_response, err := k.requestStockPriceToKis(stock_code)
+	// token 체크
+	token, err := k.KisAccessTokenRepository.GetKisAccessToken()
+	if token == nil || token.IsTokenExpired() || err != nil {
+		log.Println("token reissue")
+		token, err = k.GetAccesstoken()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	kis_stock_price_response, err := k.requestStockPriceToKis(stock_code, token.AccessToken)
+	log.Println("msg1 : ", kis_stock_price_response.Msg1)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	return kis_stock_price_response.KisStockPriceResDetails.ToStock(stock_code), nil
+}
+
+func (k *KisClientSetvice) requestStockPriceToKis(stock_code string, accessToken string) (*dto.KisStockPriceResponse, error) {
+	k.setStockPriceUrl(stock_code)
+	request, err := http.NewRequest("GET", requestURL.String(), nil)
+	k.setStockPriceRequestHeader(request, accessToken)
 	if err != nil {
 		return nil, err
 	}
-	return kis_stock_price_response.KisStockPriceResDetails.ToStock(stock_code), nil
+
+	response, err := k.HttpClient.Do(request)
+
+	if err != nil {
+		log.Println("request err : ", err)
+		return nil, err
+	}
+
+	defer response.Body.Close()
+
+	responseBody, err := io.ReadAll(response.Body)
+
+	if err != nil {
+		log.Println("resonposebody read err : ", err)
+		return nil, err
+	}
+
+	kis_stock_price_response := &dto.KisStockPriceResponse{}
+	json.Unmarshal(responseBody, &kis_stock_price_response)
+
+	return kis_stock_price_response, nil
 }
 
 func (k *KisClientSetvice) setStockPriceUrl(stock_code string) {
@@ -55,52 +105,30 @@ func (k *KisClientSetvice) setStockPriceUrl(stock_code string) {
 	requestURL.RawQuery = params.Encode()
 }
 
-func (k *KisClientSetvice) setStockPriceRequestHeader(req *http.Request) {
-	req.Header.Add("authorization", "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJ0b2tlbiIsImF1ZCI6ImYyZGVkZjg1LWZlNmQtNGI2OC05ODg5LTI3YTYxNjAyZGYyOCIsImlzcyI6InVub2d3IiwiZXhwIjoxNjg2MzkzNTkzLCJpYXQiOjE2ODYzMDcxOTMsImp0aSI6IlBTb0VZcEk3TW5zQUpJSGxwQUc0ZXFySEVOWDVnR2JJQ3NkbSJ9.-LonwsKY9wZR3PvkZ5gnGCiPN0QEcdsfAQ0KOMJeBJByhIcLsJR6yHeGWM4_CFn-LzcHlmEHp2AUAqe3-7LvgA")
+func (k *KisClientSetvice) setStockPriceRequestHeader(req *http.Request, accessToken string) {
+	req.Header.Add("authorization", "Bearer "+accessToken)
 	req.Header.Add("appkey", k.KisConfig.Key)
 	req.Header.Add("appsecret", k.KisConfig.Secret)
 	req.Header.Add("tr_id", "FHKST01010100")
 }
 
-func (k *KisClientSetvice) requestStockPriceToKis(stock_code string) (*dto.KisStockPriceResponse, error) {
-	k.setStockPriceUrl(stock_code)
-	request, err := http.NewRequest("GET", requestURL.String(), nil)
-	k.setStockPriceRequestHeader(request)
-	if err != nil {
-		return nil, err
-	}
-
-	response, err := k.HttpClient.Do(request)
-
-	if err != nil {
-		return nil, err
-	}
-
-	defer response.Body.Close()
-
-	responseBody, err := io.ReadAll(response.Body)
-
-	if err != nil {
-		return nil, err
-	}
-
-	kis_stock_price_response := &dto.KisStockPriceResponse{}
-	err = json.Unmarshal(responseBody, &kis_stock_price_response)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return kis_stock_price_response, nil
-
-}
-
 /*
 토큰 요청
 */
-func (k *KisClientSetvice) GetAccesstoken() (*dto.KisAccessTokenResponse, error) {
+func (k *KisClientSetvice) GetAccesstoken() (*domain.Token, error) {
+	tokenRes, err := k.requestToken()
+	if err != nil {
+		return nil, err
+	}
+	k.KisAccessTokenRepository.DeleteKisAccessToken()
+	return k.saveToken(tokenRes), err
+}
 
-	return k.requestToken()
+func (k *KisClientSetvice) saveToken(res_token *dto.KisAccessTokenResponse) *domain.Token {
+	now := time.Now().Format("2006-01-02 15:04:05")
+	token := res_token.ToToken(now)
+	k.KisAccessTokenRepository.InsertKisAccessToken(token)
+	return token
 }
 
 func (k *KisClientSetvice) requestToken() (*dto.KisAccessTokenResponse, error) {
