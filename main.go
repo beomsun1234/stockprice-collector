@@ -2,7 +2,9 @@ package main
 
 import (
 	"github/beomsun1234/stockprice-collector/config"
+	"github/beomsun1234/stockprice-collector/database"
 	"github/beomsun1234/stockprice-collector/external/kis"
+	"github/beomsun1234/stockprice-collector/repository"
 	"github/beomsun1234/stockprice-collector/scheduler"
 	"github/beomsun1234/stockprice-collector/service"
 	"net/http"
@@ -17,7 +19,11 @@ func init() {
 	workingDir, _ := os.Getwd()
 	c := config.NewConfig()
 	c.SetConfig(workingDir + "/config/" + "properties.yaml")
-	stockPriceCollectionScheduler = scheduler.NewStockPriceCollectionScheduler(service.NewStockPriceColletorService(kis.NewKisClientSetvice(&http.Client{}, &c.KisConfig)), cron.New())
+	redis := database.NewRedisDB(c.RedisConfig)
+	redis.Connect()
+
+	s := service.NewStockPriceColletorService(kis.NewKisClientSetvice(&http.Client{}, &c.KisConfig, repository.NewKisAccessTokenRepository(redis)))
+	stockPriceCollectionScheduler = scheduler.NewStockPriceCollectionScheduler(s, cron.New())
 }
 
 func main() {
