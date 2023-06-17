@@ -1,6 +1,9 @@
 package dto
 
-import "github/beomsun1234/stockprice-collector/domain"
+import (
+	"github/beomsun1234/stockprice-collector/domain"
+	"strconv"
+)
 
 func NewKisAccessTokenRequest(grant_type string, appsecret string, appkey string) *KisAccessTokenRequest {
 	return &KisAccessTokenRequest{
@@ -20,6 +23,10 @@ type KisAccessTokenResponse struct {
 	AccessToken string `json:"access_token"`
 	TokenType   string `json:"token_type"`
 	ExpiresIn   int    `json:"expires_in"`
+}
+
+func (k *KisAccessTokenResponse) ToToken(now string) *domain.Token {
+	return domain.NewToken().BuildAccessToken(k.AccessToken).BuildIssuedAt(now).BuildExpiresIn(strconv.Itoa(k.ExpiresIn))
 }
 
 type KisStockPriceResponse struct {
