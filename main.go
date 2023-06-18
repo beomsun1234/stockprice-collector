@@ -20,9 +20,11 @@ func init() {
 	c := config.NewConfig()
 	c.SetConfig(workingDir + "/config/" + "properties.yaml")
 	redis := database.NewRedisDB(c.RedisConfig)
-	redis.Connect()
-
-	s := service.NewStockPriceColletorService(kis.NewKisClientSetvice(&http.Client{}, &c.KisConfig, repository.NewKisAccessTokenRepository(redis)))
+	redisClinet, err := redis.Connect()
+	if err != nil {
+		panic(err)
+	}
+	s := service.NewStockPriceColletorService(kis.NewKisClientSetvice(&http.Client{}, &c.KisConfig, repository.NewKisAccessTokenRepository(redisClinet)))
 	stockPriceCollectionScheduler = scheduler.NewStockPriceCollectionScheduler(s, cron.New())
 }
 

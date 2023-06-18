@@ -14,8 +14,8 @@ func Test_GetAccessToken(t *testing.T) {
 	t.Run("Test GetAccessToken", func(t *testing.T) {
 		//given
 		db := mocks.NewMockRedisDatabase()
-		db.Connect()
-		repo := repository.NewKisAccessTokenRepository(db)
+		redisClient := db.Connect()
+		repo := repository.NewKisAccessTokenRepository(redisClient)
 		token := domain.NewToken().BuildAccessToken("test").BuildExpiresIn("10").BuildIssuedAt("2023-11-16 11:00:00")
 		byte_token, _ := json.Marshal(token)
 		db.RedisMock.ExpectHGet("token", "token").SetVal(string(byte_token))
@@ -31,13 +31,10 @@ func Test_InsertAccessToken(t *testing.T) {
 	t.Run("Test InsertAccessToken", func(t *testing.T) {
 		//given
 		db := mocks.NewMockRedisDatabase()
-		db.Connect()
-		repo := repository.NewKisAccessTokenRepository(db)
-
+		redisClient := db.Connect()
+		repo := repository.NewKisAccessTokenRepository(redisClient)
 		tt := domain.NewToken().BuildAccessToken("test").BuildExpiresIn("10").BuildIssuedAt("2023-11-16 11:00:00")
-
 		data, _ := json.Marshal(tt)
-
 		db.RedisMock.ExpectHSet("token", "token", data).SetVal(1)
 		//when
 		err := repo.InsertKisAccessToken(tt)
@@ -50,14 +47,11 @@ func Test_DeleteAccessToken(t *testing.T) {
 	t.Run("Test DeleteAccessToken", func(t *testing.T) {
 		//given
 		db := mocks.NewMockRedisDatabase()
-		db.Connect()
-		repo := repository.NewKisAccessTokenRepository(db)
-
+		redisClient := db.Connect()
+		repo := repository.NewKisAccessTokenRepository(redisClient)
 		domain.NewToken().BuildAccessToken("test").BuildExpiresIn("10").BuildIssuedAt("2023-11-16 11:00:00")
-
 		db.RedisMock.ExpectHDel("token", "token")
 		//when,then
 		repo.DeleteKisAccessToken()
-
 	})
 }

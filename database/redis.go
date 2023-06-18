@@ -1,6 +1,7 @@
 package database
 
 import (
+	"errors"
 	"github/beomsun1234/stockprice-collector/config"
 
 	"github.com/go-redis/redis/v8"
@@ -11,20 +12,20 @@ type Redis struct {
 	RedisConfig config.RedisConfig
 }
 
-func NewRedisDB(redisConfig config.RedisConfig) Database {
+func NewRedisDB(redisConfig config.RedisConfig) *Redis {
 	return &Redis{
 		RedisConfig: redisConfig,
 	}
 }
 
-func (r *Redis) Client() *redis.Client {
-	return r.Redis
-}
-
-func (r *Redis) Connect() {
+func (r *Redis) Connect() (*redis.Client, error) {
 	r.Redis = redis.NewClient(&redis.Options{
 		Addr:     r.RedisConfig.Addr,
 		Password: r.RedisConfig.Password, // no password set
 		// use default DB
 	})
+	if r.Redis != nil {
+		return nil, errors.New("redis connectio error")
+	}
+	return r.Redis, nil
 }

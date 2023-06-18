@@ -29,7 +29,7 @@ func Test_GetStockPrice(t *testing.T) {
 		mockRepo := mocks.NewMockKisAccessTokenRepository()
 		kisClient := kis.NewKisClientSetvice(httpClient, kis_config, mockRepo)
 		//when
-		stock, err := kisClient.GetStockPrice("01234")
+		stock, err := kisClient.GetStockPrice("01234", "test")
 		//then
 		assert.Equal(t, stock.Stock_Price, "10000")
 		assert.Equal(t, err, nil)
@@ -65,7 +65,7 @@ func Test_tiem(t *testing.T) {
 		tokenIssedAt, _ := time.Parse("2006-01-02 15:04:05", "2023-06-17 23:26:00")
 		expiresIn, _ := strconv.ParseInt("86400", 10, 64)
 		expiredAt := tokenIssedAt.Add(time.Second * time.Duration(expiresIn))
-		now := time.Now()
-		assert.Equal(t, expiredAt.After(now), true)
+		now, _ := time.Parse("2006-01-02 15:04:05", "2023-06-18 23:27:00")
+		assert.Equal(t, expiredAt.Before(now), true)
 	})
 }

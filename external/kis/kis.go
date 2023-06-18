@@ -24,7 +24,7 @@ var (
 )
 
 type KisClientSetviceInterface interface {
-	GetStockPrice(stock_code string) (*domain.Stock, error)
+	GetStockPrice(stock_code string, access_token string) (*domain.Stock, error)
 	GetAccesstoken() (*domain.Token, error)
 }
 
@@ -45,24 +45,13 @@ func NewKisClientSetvice(http_client_di external.HttpClient, kis_config *config.
 /*
 주식 현재가 요청
 */
-func (k *KisClientSetvice) GetStockPrice(stock_code string) (*domain.Stock, error) {
-	// token 체크
-	token, err := k.KisAccessTokenRepository.GetKisAccessToken()
-	if token == nil || token.IsTokenExpired() || err != nil {
-		log.Println("token reissue")
-		token, err = k.GetAccesstoken()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	kis_stock_price_response, err := k.requestStockPriceToKis(stock_code, token.AccessToken)
+func (k *KisClientSetvice) GetStockPrice(stock_code string, access_token string) (*domain.Stock, error) {
+	kis_stock_price_response, err := k.requestStockPriceToKis(stock_code, access_token)
 	log.Println("msg1 : ", kis_stock_price_response.Msg1)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-
 	return kis_stock_price_response.KisStockPriceResDetails.ToStock(stock_code), nil
 }
 
@@ -116,12 +105,17 @@ func (k *KisClientSetvice) setStockPriceRequestHeader(req *http.Request, accessT
 토큰 요청
 */
 func (k *KisClientSetvice) GetAccesstoken() (*domain.Token, error) {
-	tokenRes, err := k.requestToken()
-	if err != nil {
-		return nil, err
+	token, err := k.KisAccessTokenRepository.GetKisAccessToken()
+	if token == nil || token.IsTokenExpired() || err != nil {
+		log.Println("token reissue")
+		tokenRes, err := k.requestToken()
+		if err != nil {
+			return nil, err
+		}
+		k.KisAccessTokenRepository.DeleteKisAccessToken()
+		token = k.saveToken(tokenRes)
 	}
-	k.KisAccessTokenRepository.DeleteKisAccessToken()
-	return k.saveToken(tokenRes), err
+	return token, err
 }
 
 func (k *KisClientSetvice) saveToken(res_token *dto.KisAccessTokenResponse) *domain.Token {

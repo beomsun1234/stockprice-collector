@@ -14,10 +14,7 @@ func NewMockRedisDatabase() *MockRedisDatabase {
 	return &MockRedisDatabase{}
 }
 
-func (m *MockRedisDatabase) Connect() {
+func (m *MockRedisDatabase) Connect() *redis.Client {
 	m.Redis, m.RedisMock = redismock.NewClientMock()
-}
-
-func (m *MockRedisDatabase) Client() *redis.Client {
 	return m.Redis
 }
