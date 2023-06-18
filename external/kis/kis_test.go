@@ -29,7 +29,7 @@ func Test_GetStockPrice(t *testing.T) {
 		mockRepo := mocks.NewMockKisAccessTokenRepository()
 		kisClient := kis.NewKisClientSetvice(httpClient, kis_config, mockRepo)
 		//when
-		stock, err := kisClient.GetStockPrice("01234")
+		stock, err := kisClient.GetStockPrice("01234", "test")
 		//then
 		assert.Equal(t, stock.Stock_Price, "10000")
 		assert.Equal(t, err, nil)

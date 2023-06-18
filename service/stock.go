@@ -19,7 +19,6 @@ type StockPriceColletorService struct {
 
 var (
 	collected_stock_prices []*domain.Stock
-	wg                     sync.WaitGroup
 	stockCodes             []string
 )
 
@@ -63,12 +62,16 @@ func NewStockPriceColletorService(kisClientSetviceDi kis.KisClientSetviceInterfa
 주식가격 수집
 */
 func (s *StockPriceColletorService) CollectStockPrices() []*domain.Stock {
+	token, err := s.KisClientSetvice.GetAccesstoken()
+	if err != nil {
+		token = domain.NewToken()
+	}
 	collected_stock_prices = []*domain.Stock{}
 	setStockCode()
-	wg = sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 	for _, stock_code := range stockCodes {
 		wg.Add(1)
-		go s.getStockPrice(stock_code)
+		go s.getStockPrice(wg, stock_code, token.AccessToken)
 	}
 	//wait until stock price collection is done
 	wg.Wait()
@@ -76,10 +79,13 @@ func (s *StockPriceColletorService) CollectStockPrices() []*domain.Stock {
 
 }
 
-func (s *StockPriceColletorService) getStockPrice(stock_code string) (*domain.Stock, error) {
+func (s *StockPriceColletorService) getStockPrice(wg *sync.WaitGroup, stock_code string, access_token string) (*domain.Stock, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	stock_info, err := s.KisClientSetvice.GetStockPrice(stock_code)
-
+	defer func() {
+		wg.Done()
+		cancel()
+	}()
+	stock_info, err := s.KisClientSetvice.GetStockPrice(stock_code, access_token)
 	if err := ctx.Err(); err != nil {
 		log.Println("timeout")
 		stock_info = &domain.Stock{
@@ -93,9 +99,5 @@ func (s *StockPriceColletorService) getStockPrice(stock_code string) (*domain.St
 		}
 	}
 	collected_stock_prices = append(collected_stock_prices, stock_info)
-	defer func() {
-		wg.Done()
-		cancel()
-	}()
 	return stock_info, nil
 }
