@@ -2,8 +2,8 @@ package main
 
 import (
 	"github/beomsun1234/stockprice-collector/config"
-	"github/beomsun1234/stockprice-collector/database"
 	"github/beomsun1234/stockprice-collector/external/kis"
+	"github/beomsun1234/stockprice-collector/infra/database"
 	"github/beomsun1234/stockprice-collector/repository"
 	"github/beomsun1234/stockprice-collector/scheduler"
 	"github/beomsun1234/stockprice-collector/service"

@@ -25,7 +25,7 @@ func (r *Redis) Connect() (*redis.Client, error) {
 		// use default DB
 	})
 	if r.Redis != nil {
-		return nil, errors.New("redis connectio error")
+		return nil, errors.New("redis connection error")
 	}
 	return r.Redis, nil
 }
