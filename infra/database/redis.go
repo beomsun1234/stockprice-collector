@@ -24,7 +24,7 @@ func (r *Redis) Connect() (*redis.Client, error) {
 		Password: r.RedisConfig.Password, // no password set
 		// use default DB
 	})
-	if r.Redis != nil {
+	if r.Redis == nil {
 		return nil, errors.New("redis connection error")
 	}
 	return r.Redis, nil

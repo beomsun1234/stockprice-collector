@@ -31,7 +31,7 @@ func (t *Token) BuildExpiresIn(expiresIn string) *Token {
 func (t *Token) IsTokenExpired() bool {
 	//todo string date -> date
 	if t.AccessToken == "" || t.ExpiresIn == "" || t.IssuedAt == "" {
-		return false
+		return true
 	}
 	tokenIssedAt, _ := time.Parse("2006-01-02 15:04:05", t.IssuedAt)
 	expiresIn, _ := strconv.ParseInt(t.ExpiresIn, 10, 64)

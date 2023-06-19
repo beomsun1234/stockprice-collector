@@ -110,7 +110,7 @@ func (k *KisClientSetvice) GetAccesstoken() (*domain.Token, error) {
 		log.Println("token reissue")
 		tokenRes, err := k.requestToken()
 		if err != nil {
-			return nil, err
+			return domain.NewToken(), err
 		}
 		k.KisAccessTokenRepository.DeleteKisAccessToken()
 		token = k.saveToken(tokenRes)
