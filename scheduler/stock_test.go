@@ -25,6 +25,7 @@ func Test_CollectStockPricesEverySecond(t *testing.T) {
 		httpClient := &mocks.MockStockPriceHttpClient{}
 		mockRepo := mocks.NewMockKisAccessTokenRepository()
 		kisClient := kis.NewKisClientSetvice(httpClient, &c.KisConfig, mockRepo)
+		kafkaMock := mocks.NewMockMessagequeue()
 		stockPriceCollectorService := service.NewStockPriceColletorService(kisClient)
 		res := &dto.KisStockPriceResponse{
 			KisStockPriceResDetails: dto.KisStockPriceResponseDetails{
@@ -33,7 +34,7 @@ func Test_CollectStockPricesEverySecond(t *testing.T) {
 		}
 		httpClient.MockKisStockPriceResponse = res
 		mock_scheduler := &mocks.MockScheduler{}
-		s := scheduler.NewStockPriceCollectionScheduler(stockPriceCollectorService, mock_scheduler)
+		s := scheduler.NewStockPriceCollectionScheduler(stockPriceCollectorService, mock_scheduler, kafkaMock)
 		//when, then
 		s.CollectStockPricesEverySecond()
 	})
@@ -49,6 +50,7 @@ func Test_CollectStockPricesEverySecondReal(t *testing.T) {
 		}
 		httpClient := &mocks.MockStockPriceHttpClient{}
 		mockRepo := mocks.NewMockKisAccessTokenRepository()
+		kafkaMock := mocks.NewMockMessagequeue()
 		kisClient := kis.NewKisClientSetvice(httpClient, &c.KisConfig, mockRepo)
 		stockPriceCollectorService := service.NewStockPriceColletorService(kisClient)
 		res := &dto.KisStockPriceResponse{
@@ -59,7 +61,7 @@ func Test_CollectStockPricesEverySecondReal(t *testing.T) {
 		httpClient.MockKisStockPriceResponse = res
 		scheduler_di := cron.New()
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		s := scheduler.NewStockPriceCollectionScheduler(stockPriceCollectorService, scheduler_di)
+		s := scheduler.NewStockPriceCollectionScheduler(stockPriceCollectorService, scheduler_di, kafkaMock)
 		//when, then
 		s.CollectStockPricesEverySecond()
 		<-ctx.Done()
