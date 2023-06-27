@@ -10,6 +10,7 @@ import (
 type Config struct {
 	KisConfig   KisConfig   `yaml:"kis"`
 	RedisConfig RedisConfig `yaml:"redis"`
+	KafkaConfig KafkaConfig `yaml:"kafka"`
 }
 
 type KisConfig struct {
@@ -21,6 +22,10 @@ type RedisConfig struct {
 	Password string `yaml:"password"`
 }
 
+type KafkaConfig struct {
+	Addrs []string `yaml:"addrs"`
+}
+
 func NewConfig() *Config {
 	return &Config{}
 }
@@ -29,6 +34,7 @@ func (c *Config) SetConfig(file_name string) {
 	new_config := ConvertYamlToConfig(file_name)
 	c.KisConfig = new_config.KisConfig
 	c.RedisConfig = new_config.RedisConfig
+	c.KafkaConfig = new_config.KafkaConfig
 }
 
 func ConvertYamlToConfig(file_name string) *Config {
