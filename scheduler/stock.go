@@ -36,10 +36,15 @@ func (s *StockPriceCollectionScheduler) CollectStockPricesEverySecond() {
 func (s *StockPriceCollectionScheduler) collectStockPrices() {
 	stock_prices := s.StockPriceColletorService.CollectStockPrices()
 	msg := s.convertStocksToBytes(stock_prices)
-	err := s.Kafka.SendMessage(msg)
-	if err != nil {
-		log.Fatalln(err)
+
+	if stock_prices[0].Stock_Price != "" {
+		err := s.Kafka.SendMessage(msg)
+
+		if err != nil {
+			log.Fatalln(err)
+		}
 	}
+
 	s.printLogs(msg)
 }
 

@@ -31,6 +31,9 @@ func (k *KisAccessTokenRepository) GetKisAccessToken() (*domain.Token, error) {
 	defer cancel()
 	data, err := k.Redis.HGet(ctx, "token", "token").Result()
 	if err != nil {
+		if err == redis.Nil {
+			return nil, nil
+		}
 		log.Println(err)
 		return nil, err
 	}

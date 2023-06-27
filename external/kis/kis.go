@@ -47,11 +47,19 @@ func NewKisClientSetvice(http_client_di external.HttpClient, kis_config *config.
 */
 func (k *KisClientSetvice) GetStockPrice(stock_code string, access_token string) (*domain.Stock, error) {
 	kis_stock_price_response, err := k.requestStockPriceToKis(stock_code, access_token)
-	log.Println("msg1 : ", kis_stock_price_response.Msg1)
+
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
+	log.Println("msg1 : ", kis_stock_price_response.Msg1, "Rt_Cd : ", kis_stock_price_response.Rt_Cd)
+	//Rt_Cd = 0 성공
+	//실패시 토큰삭제
+	if kis_stock_price_response.Rt_Cd == "1" {
+		log.Println("token 삭제")
+		k.KisAccessTokenRepository.DeleteKisAccessToken()
+	}
+
 	return kis_stock_price_response.KisStockPriceResDetails.ToStock(stock_code), nil
 }
 
@@ -106,16 +114,28 @@ func (k *KisClientSetvice) setStockPriceRequestHeader(req *http.Request, accessT
 */
 func (k *KisClientSetvice) GetAccesstoken() (*domain.Token, error) {
 	token, err := k.KisAccessTokenRepository.GetKisAccessToken()
-	if token == nil || token.IsTokenExpired() || err != nil {
-		log.Println("token reissue")
-		tokenRes, err := k.requestToken()
-		if err != nil {
-			return domain.NewToken(), err
-		}
-		k.KisAccessTokenRepository.DeleteKisAccessToken()
-		token = k.saveToken(tokenRes)
+
+	if err != nil && token == nil {
+		log.Fatalln(err)
+		return domain.NewToken(), err
 	}
+
+	if token == nil || token.IsTokenExpired() {
+		token, err = k.publishToken()
+	}
+
 	return token, err
+}
+
+func (k *KisClientSetvice) publishToken() (*domain.Token, error) {
+	tokenRes, err := k.requestToken()
+	log.Println("token reissue")
+	if err != nil {
+		return domain.NewToken(), err
+	}
+	k.KisAccessTokenRepository.DeleteKisAccessToken()
+	token := k.saveToken(tokenRes)
+	return token, nil
 }
 
 func (k *KisClientSetvice) saveToken(res_token *dto.KisAccessTokenResponse) *domain.Token {
