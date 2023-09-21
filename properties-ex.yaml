@@ -1,0 +1,14 @@
+kafka:
+  addrs:
+    - ""
+    - ""
+    - ""
+    
+redis:
+  addr: ""
+  password: ""
+
+
+kis:
+  key: ""
+  secret: ""
